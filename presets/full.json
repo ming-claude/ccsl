@@ -1,0 +1,11 @@
+{
+  "lines": [
+    ["model", "cwd", "git"],
+    ["context", "tokens", "cost"],
+    ["usage_5hour", "usage_weekly", "version", "clock"],
+    ["session", "env", "speed", "diff"],
+    ["activity"],
+    ["live"]
+  ],
+  "disabled": []
+}

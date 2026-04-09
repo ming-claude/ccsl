@@ -1,0 +1,4 @@
+{
+  "lines": [["model", "context", "cost", "git"]],
+  "disabled": ["git.changes", "git.insertions", "git.deletions", "git.worktree", "context.length", "context.pct"]
+}

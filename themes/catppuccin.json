@@ -1,0 +1,22 @@
+{
+  "variant": "non-block",
+  "separator": " │ ",
+  "colors": {
+    "model":    "#cba6f7",
+    "git":      {"fg": "#a6e3a1", "positive": "#a6e3a1", "negative": "#f38ba8"},
+    "context":  "#89b4fa",
+    "tokens":   "#94e2d5",
+    "cost":     "#f9e2af",
+    "usage_5hour":  "#fab387",
+    "usage_weekly": "#89b4fa",
+    "version":  "#7f849c",
+    "session":  "#cba6f7",
+    "speed":    "#94e2d5",
+    "diff":     {"fg": "#a6adc8", "positive": "#a6e3a1", "negative": "#f38ba8"},
+    "activity": "#a6e3a1",
+    "live":     "#fab387",
+    "cwd":      "#a6adc8",
+    "env":      "#7f849c",
+    "clock":    "#89dceb"
+  }
+}

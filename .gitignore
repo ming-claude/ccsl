@@ -1,0 +1,32 @@
+# Build output
+ccsl
+*.exe
+
+# OS
+.DS_Store
+
+# Environment & secrets
+.env
+.env.*
+
+# Go
+vendor/
+*.test
+cover.out
+coverage.html
+
+# JetBrains IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Project-specific
+.worktrees/
+.superpowers/
+docs/plans/
+docs/superpowers/
+docs/brainstorms/
