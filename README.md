@@ -13,7 +13,7 @@ A custom status line for [Claude Code](https://docs.anthropic.com/en/docs/claude
 ## Features
 
 - **16 segment groups** — model, git, context window, tokens, cost, API usage, weekly stats, version, session, speed, diff, activity, live, cwd, clock, environment
-- **12 color themes** — Aurora, Catppuccin, Dracula, Gruvbox, One Dark, Tokyo Night (each with block variant)
+- **8 color themes** — Catppuccin, Cyberpunk, Dracula, Gruvbox, High Contrast, Monochrome, Nord, Solarized Light (with block variants)
 - **4 presets** — minimal, standard, full, dev
 - **TUI config editor** — run `ccsl` interactively to configure themes, presets, and segments
 - **SmartAlign rendering** — intelligent width management with cross-line alignment
@@ -78,14 +78,18 @@ Config is saved to `~/.claude/ccsl/config.json`.
 
 ## Themes
 
-| Theme | Block Variant |
-|-------|---------------|
-| Aurora | Aurora Block |
-| Catppuccin | Catppuccin Block |
-| Dracula | Dracula Block |
-| Gruvbox | Gruvbox Block |
-| One Dark | One Dark Block |
-| Tokyo Night | Tokyo Night Block |
+| Theme | Style | Description |
+|-------|-------|-------------|
+| Catppuccin | Dark, soft pastel | Community-favorite warm dark theme |
+| Cyberpunk | Dark, neon | Hot pink, electric blue, fluorescent green |
+| Dracula | Dark, saturated | High-saturation cool dark theme |
+| Gruvbox | Dark, warm | Earthy warm tones with yellow-green accents |
+| High Contrast | Dark, accessible | WCAG AA compliant bright-on-black |
+| Monochrome | Dark, minimal | Single cyan hue, brightness-only differentiation |
+| Nord | Dark, arctic | Cool blue-grey, low saturation |
+| Solarized Light | Light (block only) | Solarized official light palette |
+
+Each theme has both non-block and block variants, except Solarized Light (block only).
 
 ## Presets
 

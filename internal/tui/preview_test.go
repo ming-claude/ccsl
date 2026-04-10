@@ -57,7 +57,7 @@ func TestBuildPreview_LineCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.preset, func(t *testing.T) {
-			cfg := buildTestConfig(tt.preset, "one-dark-block")
+			cfg := buildTestConfig(tt.preset, "catppuccin-block")
 			if cfg == nil {
 				t.Fatal("failed to build test config")
 			}
@@ -75,7 +75,7 @@ func TestBuildPreview_LineCount(t *testing.T) {
 }
 
 func TestBuildPreview_ContainsANSI(t *testing.T) {
-	cfg := buildTestConfig("standard", "one-dark-block")
+	cfg := buildTestConfig("standard", "catppuccin-block")
 	if cfg == nil {
 		t.Fatal("failed to build test config")
 	}
@@ -88,7 +88,7 @@ func TestBuildPreview_ContainsANSI(t *testing.T) {
 }
 
 func TestBuildPreview_DisabledGroup(t *testing.T) {
-	cfg := buildTestConfig("standard", "one-dark-block")
+	cfg := buildTestConfig("standard", "catppuccin-block")
 	if cfg == nil {
 		t.Fatal("failed to build test config")
 	}
@@ -109,7 +109,7 @@ func TestBuildPreview_DisabledGroup(t *testing.T) {
 }
 
 func TestBuildPreview_AllGroupsDisabled(t *testing.T) {
-	cfg := buildTestConfig("minimal", "one-dark-block")
+	cfg := buildTestConfig("minimal", "catppuccin-block")
 	if cfg == nil {
 		t.Fatal("failed to build test config")
 	}
@@ -129,7 +129,7 @@ func TestBuildPreview_AllGroupsDisabled(t *testing.T) {
 }
 
 func TestBuildPreview_TokensFormat(t *testing.T) {
-	cfg := buildTestConfig("standard", "one-dark-block")
+	cfg := buildTestConfig("standard", "catppuccin-block")
 	if cfg == nil {
 		t.Fatal("failed to build test config")
 	}
@@ -155,7 +155,7 @@ func TestBuildPreview_TokensFormat(t *testing.T) {
 }
 
 func TestBuildPreview_NonBlockTheme(t *testing.T) {
-	cfg := buildTestConfig("standard", "one-dark")
+	cfg := buildTestConfig("standard", "catppuccin")
 	if cfg == nil {
 		t.Fatal("failed to build test config")
 	}

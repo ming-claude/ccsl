@@ -14,7 +14,7 @@ func TestBuildElements_StandardPreset(t *testing.T) {
 		t.Fatalf("LoadPreset: %v", err)
 	}
 
-	theme, err := config.LoadTheme("one-dark-block")
+	theme, err := config.LoadTheme("catppuccin-block")
 	if err != nil {
 		t.Fatalf("LoadTheme: %v", err)
 	}
