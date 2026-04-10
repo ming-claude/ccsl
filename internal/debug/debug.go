@@ -63,6 +63,7 @@ type Entry struct {
 	RightReserved int               `json:"right_reserved"`
 	ConfigStyle   string            `json:"config_style"`
 	ConfigLines   int               `json:"config_lines"`
+	ColorLevel    int               `json:"color_level"`
 	Disabled      map[string]bool   `json:"disabled,omitempty"`
 	Stdin         gojson.RawMessage `json:"stdin"`
 
