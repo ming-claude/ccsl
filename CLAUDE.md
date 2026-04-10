@@ -26,7 +26,7 @@
 - `internal/oauth/` — OAuth token extraction for API auth
 - `internal/npm/` — npm (Claude Code) version checking
 - `internal/pipeline/` — shared render pipeline (used by statusline and TUI preview)
-- `themes/` — 6 embedded color themes (with block variants), go:embed in `themes/themes.go`
+- `themes/` — 8 embedded color themes (with block variants), go:embed in `themes/themes.go`
 - `presets/` — 4 embedded preset configs (minimal/standard/full/dev)
 
 ## Conventions
@@ -41,4 +41,4 @@
 - Segment disable key format: `"group.child"` (e.g., `"git.branch"`) in config's disabled map
 - Pre-GA project: no backward compatibility concerns — refactor aggressively, no migration/compat shims needed
 - Debug logging: all non-sensitive intermediate data (fetched values, computed state) should be included in the debug log entry (`internal/debug/`) for diagnostics
-- **New group checklist**: adding a segment group requires updates in 4 places — `registry_default.go` (register), `internal/style/style.go` (icon), all 12 `themes/*.json` (color), and relevant `presets/*.json` (layout)
+- **New group checklist**: adding a segment group requires updates in 4 places — `registry_default.go` (register), `internal/style/style.go` (icon), all 15 `themes/*.json` (color), and relevant `presets/*.json` (layout)

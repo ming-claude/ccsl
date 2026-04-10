@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +15,7 @@ import (
 
 const (
 	defaultPreset  = "standard"
-	defaultTheme   = "aurora-block"
+	defaultTheme   = "catppuccin-block"
 	defaultStyle   = "nerd-font"
 	configDirName  = "ccsl"
 	configFileName = "config.json"
@@ -175,10 +176,17 @@ func Resolve(uc *UserConfig) (*Config, error) {
 		return nil, err
 	}
 
-	// Load theme.
+	// Load theme with fallback to default if configured theme is missing.
 	theme, err := LoadTheme(themeName)
 	if err != nil {
-		return nil, err
+		slog.Warn("configured theme not found, falling back to default",
+			"theme", themeName, "default", defaultTheme)
+		theme, err = LoadTheme(defaultTheme)
+		if err != nil {
+			return nil, fmt.Errorf("theme %q not found and fallback %q also failed: %w",
+				themeName, defaultTheme, err)
+		}
+		themeName = defaultTheme
 	}
 
 	// Build disabled set: union of preset defaults + user disabled_segments.

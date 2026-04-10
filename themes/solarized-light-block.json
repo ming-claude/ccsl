@@ -1,0 +1,22 @@
+{
+  "variant": "block",
+  "separator": "",
+  "colors": {
+    "model":    {"fg": "#6c71c4", "bg": "#eee8d5"},
+    "git":      {"fg": "#859900", "bg": "#eee8d5", "positive": "#859900", "negative": "#dc322f"},
+    "context":  {"fg": "#268bd2", "bg": "#eee8d5"},
+    "tokens":   {"fg": "#2aa198", "bg": "#eee8d5"},
+    "cost":     {"fg": "#b58900", "bg": "#eee8d5"},
+    "usage_5hour":  {"fg": "#cb4b16", "bg": "#eee8d5"},
+    "usage_weekly": {"fg": "#268bd2", "bg": "#fdf6e3"},
+    "version":  {"fg": "#93a1a1", "bg": "#eee8d5"},
+    "session":  {"fg": "#6c71c4", "bg": "#eee8d5"},
+    "speed":    {"fg": "#2aa198", "bg": "#eee8d5"},
+    "diff":     {"fg": "#657b83", "bg": "#fdf6e3", "positive": "#859900", "negative": "#dc322f"},
+    "activity": {"fg": "#859900", "bg": "#eee8d5"},
+    "live":     {"fg": "#cb4b16", "bg": "#eee8d5"},
+    "cwd":      {"fg": "#657b83", "bg": "#fdf6e3"},
+    "env":      {"fg": "#93a1a1", "bg": "#eee8d5"},
+    "clock":    {"fg": "#2aa198", "bg": "#fdf6e3"}
+  }
+}

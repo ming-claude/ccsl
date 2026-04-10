@@ -18,8 +18,8 @@ func TestResolve_DefaultsWhenNilUserConfig(t *testing.T) {
 	if cfg.Preset != "standard" {
 		t.Errorf("got preset %q, want %q", cfg.Preset, "standard")
 	}
-	if cfg.Theme != "aurora-block" {
-		t.Errorf("got theme %q, want %q", cfg.Theme, "aurora-block")
+	if cfg.Theme != "catppuccin-block" {
+		t.Errorf("got theme %q, want %q", cfg.Theme, "catppuccin-block")
 	}
 	if cfg.Style != "nerd-font" {
 		t.Errorf("got style %q, want %q", cfg.Style, "nerd-font")
@@ -49,7 +49,7 @@ func TestResolve_DefaultsWhenNilUserConfig(t *testing.T) {
 func TestResolve_ValidUserConfig(t *testing.T) {
 	uc := &UserConfig{
 		Preset:           "full",
-		Theme:            "aurora-block",
+		Theme:            "catppuccin-block",
 		Style:            "nerd-font",
 		DisabledSegments: []string{"speed"},
 	}
@@ -196,7 +196,7 @@ func TestLoadPreset_Unknown(t *testing.T) {
 func TestLoadTheme_AllThemes(t *testing.T) {
 	expectedGroups := []string{
 		"model", "git", "context", "tokens", "cost", "usage_5hour", "usage_weekly",
-		"session", "speed", "diff", "activity", "live", "cwd", "env", "clock",
+		"version", "session", "speed", "diff", "activity", "live", "cwd", "env", "clock",
 	}
 
 	for _, name := range ListThemes() {
@@ -209,7 +209,7 @@ func TestLoadTheme_AllThemes(t *testing.T) {
 				t.Error("theme should have colors")
 			}
 
-			// Verify all 13 groups are present.
+			// Verify all 16 groups are present.
 			for _, grp := range expectedGroups {
 				if _, ok := theme.Colors[grp]; !ok {
 					t.Errorf("theme missing group color %q", grp)
@@ -253,10 +253,26 @@ func TestLoadTheme_Unknown(t *testing.T) {
 	}
 }
 
+func TestResolve_FallbackOnMissingTheme(t *testing.T) {
+	uc := &UserConfig{
+		Theme: "nonexistent-theme",
+	}
+	cfg, err := Resolve(uc)
+	if err != nil {
+		t.Fatalf("expected fallback to default theme, got error: %v", err)
+	}
+	if cfg.Theme != defaultTheme {
+		t.Errorf("got theme %q after fallback, want %q", cfg.Theme, defaultTheme)
+	}
+	if len(cfg.ThemeColors) == 0 {
+		t.Error("expected non-empty ThemeColors after fallback")
+	}
+}
+
 func TestListThemes(t *testing.T) {
 	names := ListThemes()
-	if len(names) < 12 {
-		t.Errorf("expected at least 12 themes, got %d: %v", len(names), names)
+	if len(names) < 15 {
+		t.Errorf("expected at least 15 themes, got %d: %v", len(names), names)
 	}
 }
 
