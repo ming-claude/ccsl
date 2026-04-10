@@ -189,6 +189,23 @@ func Resolve(uc *UserConfig) (*Config, error) {
 		themeName = defaultTheme
 	}
 
+	// Auto-downgrade block theme when truecolor not available.
+	// Claude Code's Ink TUI re-renders ANSI through chalk, which
+	// downgrades RGB backgrounds based on supports-color detection.
+	// Switching to non-block avoids unusable black backgrounds.
+	colorLevel := DetectColorLevel()
+	if colorLevel < ColorLevelTruecolor && theme.Variant == "block" {
+		nonBlockName := strings.TrimSuffix(themeName, "-block")
+		if nonBlockName != themeName {
+			if nbTheme, err := LoadTheme(nonBlockName); err == nil {
+				slog.Info("truecolor not detected, downgrading to non-block theme",
+					"from", themeName, "to", nonBlockName, "color_level", colorLevel)
+				theme = nbTheme
+				themeName = nonBlockName
+			}
+		}
+	}
+
 	// Build disabled set: union of preset defaults + user disabled_segments.
 	disabled := make(map[string]bool)
 	for _, s := range preset.Disabled {

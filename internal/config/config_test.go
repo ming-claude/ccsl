@@ -9,6 +9,7 @@ import (
 )
 
 func TestResolve_DefaultsWhenNilUserConfig(t *testing.T) {
+	t.Setenv("COLORTERM", "truecolor")
 	cfg, err := Resolve(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -47,6 +48,7 @@ func TestResolve_DefaultsWhenNilUserConfig(t *testing.T) {
 }
 
 func TestResolve_ValidUserConfig(t *testing.T) {
+	t.Setenv("COLORTERM", "truecolor")
 	uc := &UserConfig{
 		Preset:           "full",
 		Theme:            "catppuccin-block",
@@ -254,6 +256,7 @@ func TestLoadTheme_Unknown(t *testing.T) {
 }
 
 func TestResolve_FallbackOnMissingTheme(t *testing.T) {
+	t.Setenv("COLORTERM", "truecolor")
 	uc := &UserConfig{
 		Theme: "nonexistent-theme",
 	}
@@ -576,4 +579,70 @@ func keys(m map[string]gojson.RawMessage) []string {
 		result = append(result, k)
 	}
 	return result
+}
+
+func TestResolve_DowngradesBlockThemeWhenNoTruecolor(t *testing.T) {
+	t.Setenv("TERM", "xterm")
+	t.Setenv("COLORTERM", "")
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("FORCE_COLOR", "")
+
+	uc := &UserConfig{Theme: "catppuccin-block"}
+	cfg, err := Resolve(uc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Theme != "catppuccin" {
+		t.Errorf("got theme %q, want %q (downgraded)", cfg.Theme, "catppuccin")
+	}
+	if !cfg.SeparatorSet {
+		t.Error("expected SeparatorSet=true from non-block theme")
+	}
+}
+
+func TestResolve_KeepsBlockThemeWhenTruecolor(t *testing.T) {
+	t.Setenv("COLORTERM", "truecolor")
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("FORCE_COLOR", "")
+
+	uc := &UserConfig{Theme: "catppuccin-block"}
+	cfg, err := Resolve(uc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Theme != "catppuccin-block" {
+		t.Errorf("got theme %q, want %q (kept)", cfg.Theme, "catppuccin-block")
+	}
+}
+
+func TestResolve_KeepsBlockThemeWhenNoNonBlockVariant(t *testing.T) {
+	t.Setenv("TERM", "xterm")
+	t.Setenv("COLORTERM", "")
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("FORCE_COLOR", "")
+
+	uc := &UserConfig{Theme: "solarized-light-block"}
+	cfg, err := Resolve(uc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Theme != "solarized-light-block" {
+		t.Errorf("got theme %q, want %q (graceful degradation)", cfg.Theme, "solarized-light-block")
+	}
+}
+
+func TestResolve_NonBlockThemeUnaffected(t *testing.T) {
+	t.Setenv("TERM", "xterm")
+	t.Setenv("COLORTERM", "")
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("FORCE_COLOR", "")
+
+	uc := &UserConfig{Theme: "catppuccin"}
+	cfg, err := Resolve(uc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Theme != "catppuccin" {
+		t.Errorf("got theme %q, want %q (unchanged)", cfg.Theme, "catppuccin")
+	}
 }

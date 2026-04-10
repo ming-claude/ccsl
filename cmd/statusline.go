@@ -194,6 +194,7 @@ func RunStatusline() error {
 			RightReserved: rightReserved,
 			ConfigStyle:   cfg.Style,
 			ConfigLines:   len(cfg.Lines),
+			ColorLevel:    config.DetectColorLevel(),
 			Disabled:      cfg.Disabled,
 			Stdin:         rawStdin,
 			Git:           gitData,
