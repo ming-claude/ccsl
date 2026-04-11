@@ -84,6 +84,38 @@ func TestGetData_NonGitDir(t *testing.T) {
 	}
 }
 
+func TestIsGitRepo(t *testing.T) {
+	// Non-git tempdir: parent chain walks up to filesystem root and returns false.
+	if isGitRepo(t.TempDir()) {
+		t.Error("expected isGitRepo=false for tempdir")
+	}
+
+	// Regular repo with .git directory.
+	repo := t.TempDir()
+	initGitRepo(t, repo)
+	if !isGitRepo(repo) {
+		t.Error("expected isGitRepo=true at repo root")
+	}
+
+	// Subdirectory of repo — walks up to .git.
+	sub := filepath.Join(repo, "a", "b", "c")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if !isGitRepo(sub) {
+		t.Error("expected isGitRepo=true for nested dir")
+	}
+
+	// Worktree-style .git file (not a directory) — os.Stat still succeeds.
+	fake := t.TempDir()
+	if err := os.WriteFile(filepath.Join(fake, ".git"), []byte("gitdir: /tmp/elsewhere\n"), 0o644); err != nil {
+		t.Fatalf("write .git file: %v", err)
+	}
+	if !isGitRepo(fake) {
+		t.Error("expected isGitRepo=true when .git is a file (worktree/submodule)")
+	}
+}
+
 func TestGetData_UnbornHead(t *testing.T) {
 	dir := t.TempDir()
 	initGitRepo(t, dir)
@@ -192,18 +224,58 @@ func TestParseStatusV2(t *testing.T) {
 }
 
 func TestParseStatusV2_DetachedHead(t *testing.T) {
-	out := "# branch.oid abc123def456\n# branch.head (detached)"
+	out := "# branch.oid abc123def456789012345678901234567890abcd\n# branch.head (detached)"
 	var got GitData
-	parseStatusV2(out, &got)
+	oid := parseStatusV2(out, &got)
 
 	if got.Branch != "(detached)" {
 		t.Errorf("Branch = %q, want %q", got.Branch, "(detached)")
+	}
+	if oid != "abc123def456789012345678901234567890abcd" {
+		t.Errorf("oid = %q, want full-length hash", oid)
 	}
 	if got.HasRemote {
 		t.Error("expected HasRemote=false for detached HEAD")
 	}
 	if !got.IsClean {
 		t.Error("expected IsClean=true for detached HEAD with no changes")
+	}
+}
+
+func TestParseStatusV2_ReturnsOid(t *testing.T) {
+	tests := []struct {
+		name string
+		out  string
+		want string
+	}{
+		{
+			name: "normal commit",
+			out:  "# branch.oid abc123def\n# branch.head main",
+			want: "abc123def",
+		},
+		{
+			name: "unborn HEAD",
+			out:  "# branch.oid (initial)\n# branch.head main",
+			want: "(initial)",
+		},
+		{
+			name: "no oid header",
+			out:  "# branch.head main",
+			want: "",
+		},
+		{
+			name: "empty input",
+			out:  "",
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var data GitData
+			if got := parseStatusV2(tt.out, &data); got != tt.want {
+				t.Errorf("oid = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -235,6 +307,34 @@ func TestParseStatusV2_Empty(t *testing.T) {
 	}
 	if !got.IsClean {
 		t.Error("expected IsClean=true for empty output")
+	}
+}
+
+func TestGetData_DetachedHead(t *testing.T) {
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	commitFile(t, dir, "a.txt", "a\n", "first")
+
+	cmd := exec.Command("git", "checkout", "--detach", "HEAD")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git checkout --detach: %v\n%s", err, out)
+	}
+
+	data, err := GetData(dir, nil)
+	if err != nil {
+		t.Fatalf("GetData: %v", err)
+	}
+	if data == nil {
+		t.Fatal("expected non-nil GitData for detached HEAD repo")
+	}
+
+	// Branch should be resolved to a 7-char short hash, not "(detached)".
+	if data.Branch == "(detached)" {
+		t.Error("expected detached HEAD to be resolved to short hash, still shows (detached)")
+	}
+	if len(data.Branch) != 7 {
+		t.Errorf("Branch = %q, want 7-char short hash", data.Branch)
 	}
 }
 

@@ -3,7 +3,9 @@ package git
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -40,9 +42,29 @@ func runGit(ctx context.Context, cwd string, args ...string) (string, error) {
 	return strings.TrimRight(string(out), "\n\r"), nil
 }
 
+// isGitRepo walks up from dir looking for a .git entry (directory for a
+// regular repo, file for a worktree or submodule). This lets GetData bail
+// out without forking git for directories outside any repository.
+func isGitRepo(dir string) bool {
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return false
+		}
+		dir = parent
+	}
+}
+
 // GetData collects git repository data for the given working directory.
 // Returns nil, nil if the directory is not inside a git repository.
 func GetData(cwd string, timing map[string]int64) (*GitData, error) {
+	if !isGitRepo(cwd) {
+		return nil, nil
+	}
+
 	data := &GitData{}
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -50,8 +72,10 @@ func GetData(cwd string, timing map[string]int64) (*GitData, error) {
 	var tStatus, tDiff int64
 
 	// 1. git status --porcelain=v2 -b → branch, ahead/behind, file changes.
-	// This also serves as the git-repo check: if it fails, we're not in a repo.
-	var notGitRepo bool
+	// Repository existence was already checked by isGitRepo; a failure here
+	// means a corrupted index, permission error, or missing git binary, and
+	// we degrade to empty data rather than propagating.
+	var statusFailed bool
 	g.Go(func() error {
 		t0 := time.Now()
 		defer func() { tStatus = time.Since(t0).Milliseconds() }()
@@ -59,19 +83,15 @@ func GetData(cwd string, timing map[string]int64) (*GitData, error) {
 		defer cancel()
 		out, err := runGit(ctx, cwd, "status", "--porcelain=v2", "-b")
 		if err != nil {
-			notGitRepo = true
+			statusFailed = true
 			return nil
 		}
-		parseStatusV2(out, data)
+		oid := parseStatusV2(out, data)
 
-		// Detached HEAD: branch.head is "(detached)", resolve to short hash.
-		if data.Branch == "(detached)" {
-			short, err := runGit(ctx, cwd, "rev-parse", "--short", "HEAD")
-			if err != nil {
-				data.Branch = "(detached)"
-			} else {
-				data.Branch = short
-			}
+		// Detached HEAD: use the oid already parsed from the status header
+		// instead of forking a second `git rev-parse --short HEAD`.
+		if data.Branch == "(detached)" && len(oid) >= 7 {
+			data.Branch = oid[:7]
 		}
 		return nil
 	})
@@ -100,7 +120,7 @@ func GetData(cwd string, timing map[string]int64) (*GitData, error) {
 		return nil, fmt.Errorf("git data: %w", err)
 	}
 
-	if notGitRepo {
+	if statusFailed {
 		return nil, nil
 	}
 
@@ -112,14 +132,18 @@ func GetData(cwd string, timing map[string]int64) (*GitData, error) {
 	return data, nil
 }
 
-// parseStatusV2 parses the output of `git status --porcelain=v2 -b` into GitData.
-func parseStatusV2(out string, data *GitData) {
+// parseStatusV2 parses the output of `git status --porcelain=v2 -b` into
+// GitData and returns the HEAD object id parsed from the `# branch.oid` header.
+// Callers use that oid to resolve detached HEAD without forking rev-parse.
+// Returns "" for empty/unborn-HEAD input.
+func parseStatusV2(out string, data *GitData) string {
 	if out == "" {
 		data.Branch = "(init)"
 		data.IsClean = true
-		return
+		return ""
 	}
 
+	var oid string
 	hasChanges := false
 
 	for _, line := range strings.Split(out, "\n") {
@@ -128,6 +152,9 @@ func parseStatusV2(out string, data *GitData) {
 		}
 
 		switch {
+		case strings.HasPrefix(line, "# branch.oid "):
+			oid = strings.TrimPrefix(line, "# branch.oid ")
+
 		case strings.HasPrefix(line, "# branch.head "):
 			data.Branch = strings.TrimPrefix(line, "# branch.head ")
 
@@ -143,7 +170,7 @@ func parseStatusV2(out string, data *GitData) {
 			}
 
 		case strings.HasPrefix(line, "# "):
-			// Other header lines (branch.oid, branch.upstream) — skip.
+			// Other header lines (branch.upstream) — skip.
 			continue
 
 		case line[0] == '?':
@@ -177,6 +204,7 @@ func parseStatusV2(out string, data *GitData) {
 		data.Branch = "(init)"
 	}
 	data.IsClean = !hasChanges
+	return oid
 }
 
 // parseNumstat sums insertions and deletions from `git diff --numstat` output.
