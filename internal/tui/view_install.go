@@ -24,6 +24,30 @@ type installView struct {
 	done       bool
 }
 
+// isInstalled checks whether ccsl is configured as the statusLine command
+// in Claude's ~/.claude/settings.json.
+func isInstalled() bool {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	target := filepath.Join(home, ".claude", "settings.json")
+	data, err := os.ReadFile(target)
+	if err != nil {
+		return false
+	}
+	var settings map[string]any
+	if gojson.Unmarshal(data, &settings) != nil {
+		return false
+	}
+	sl, ok := settings["statusLine"].(map[string]any)
+	if !ok {
+		return false
+	}
+	cmd, ok := sl["command"].(string)
+	return ok && filepath.Base(cmd) == "ccsl"
+}
+
 func newInstallView() *installView {
 	// Detect binary path.
 	binPath := "ccsl"
@@ -34,24 +58,11 @@ func newInstallView() *installView {
 	home, _ := os.UserHomeDir()
 	target := filepath.Join(home, ".claude", "settings.json")
 
-	// Check if already installed.
-	installed := false
-	if data, err := os.ReadFile(target); err == nil {
-		var settings map[string]any
-		if gojson.Unmarshal(data, &settings) == nil {
-			if sl, ok := settings["statusLine"].(map[string]any); ok {
-				if cmd, ok := sl["command"].(string); ok && filepath.Base(cmd) == "ccsl" {
-					installed = true
-				}
-			}
-		}
-	}
-
 	return &installView{
 		binaryPath: binPath,
 		targetFile: target,
 		command:    "ccsl",
-		installed:  installed,
+		installed:  isInstalled(),
 	}
 }
 

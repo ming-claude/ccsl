@@ -2,13 +2,10 @@ package tui
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	gojson "github.com/goccy/go-json"
 
 	"github.com/ming-claude/ccsl/internal/config"
 )
@@ -37,18 +34,8 @@ func newMenuView(cfg *config.Config) *menuView {
 func (m *menuView) refresh(cfg *config.Config) {
 	// Detect install status.
 	installBadge := "not installed"
-	if home, err := os.UserHomeDir(); err == nil {
-		target := filepath.Join(home, ".claude", "settings.json")
-		if data, err := os.ReadFile(target); err == nil {
-			var settings map[string]any
-			if gojson.Unmarshal(data, &settings) == nil {
-				if sl, ok := settings["statusLine"].(map[string]any); ok {
-					if cmd, ok := sl["command"].(string); ok && filepath.Base(cmd) == "ccsl" {
-						installBadge = "installed"
-					}
-				}
-			}
-		}
+	if isInstalled() {
+		installBadge = "installed"
 	}
 
 	// Count disabled segments for badge.
