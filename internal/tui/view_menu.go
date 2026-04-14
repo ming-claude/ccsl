@@ -43,7 +43,7 @@ func (m *menuView) refresh(cfg *config.Config) {
 			var settings map[string]any
 			if gojson.Unmarshal(data, &settings) == nil {
 				if sl, ok := settings["statusLine"].(map[string]any); ok {
-					if cmd, ok := sl["command"].(string); ok && strings.Contains(cmd, "ccsl") {
+					if cmd, ok := sl["command"].(string); ok && filepath.Base(cmd) == "ccsl" {
 						installBadge = "installed"
 					}
 				}
