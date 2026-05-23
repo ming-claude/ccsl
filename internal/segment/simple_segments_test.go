@@ -36,6 +36,31 @@ func TestModelSegment(t *testing.T) {
 			stdin: &input.StdinData{Model: &input.Model{ID: "claude-opus-4-20250514"}},
 			want:  "claude-opus-4-20250514",
 		},
+		{
+			name:  "parens with effort folds in level and trims context",
+			stdin: &input.StdinData{Model: &input.Model{DisplayName: "Opus 4.7 (1M context)"}, Effort: &input.EffortInfo{Level: "xhigh"}},
+			want:  "Opus 4.7 (1M | xhigh)",
+		},
+		{
+			name:  "parens without effort only trims context",
+			stdin: &input.StdinData{Model: &input.Model{DisplayName: "Opus 4.7 (1M context)"}},
+			want:  "Opus 4.7 (1M)",
+		},
+		{
+			name:  "no parens with effort wraps in fresh parens",
+			stdin: &input.StdinData{Model: &input.Model{DisplayName: "Opus 4.7"}, Effort: &input.EffortInfo{Level: "xhigh"}},
+			want:  "Opus 4.7 (xhigh)",
+		},
+		{
+			name:  "no parens without effort unchanged",
+			stdin: &input.StdinData{Model: &input.Model{DisplayName: "Opus 4.7"}},
+			want:  "Opus 4.7",
+		},
+		{
+			name:  "empty effort level treated as absent",
+			stdin: &input.StdinData{Model: &input.Model{DisplayName: "Opus 4.7 (1M context)"}, Effort: &input.EffortInfo{Level: ""}},
+			want:  "Opus 4.7 (1M)",
+		},
 	}
 
 	for _, tt := range tests {

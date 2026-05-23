@@ -15,6 +15,7 @@ type StdinData struct {
 	Agent          *AgentInfo     `json:"agent"`
 	Worktree       *WorktreeInfo  `json:"worktree"`
 	OutputStyle    *OutputStyle   `json:"output_style"`
+	Effort         *EffortInfo    `json:"effort"`
 	ExceedsTokens  bool           `json:"exceeds_200k_tokens"`
 }
 
@@ -81,4 +82,10 @@ type WorktreeInfo struct {
 
 type OutputStyle struct {
 	Name string `json:"name"`
+}
+
+// EffortInfo carries the current reasoning effort level. Absent when the model
+// does not support the effort parameter. Level is one of low/medium/high/xhigh/max.
+type EffortInfo struct {
+	Level string `json:"level"`
 }
