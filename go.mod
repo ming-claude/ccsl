@@ -1,6 +1,8 @@
 module github.com/ming-claude/ccsl
 
-go 1.25.9
+go 1.26
+
+toolchain go1.26.3
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
