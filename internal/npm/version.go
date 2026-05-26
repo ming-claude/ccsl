@@ -189,3 +189,30 @@ func parseSemver(v string) [3]int {
 	}
 	return parts
 }
+
+// ReadChannel returns the auto-update channel configured in
+// <home>/.claude/settings.json's autoUpdatesChannel field.
+// Returns "latest" on any failure (missing file, invalid JSON,
+// missing or empty field) for graceful fallback.
+func ReadChannel(home string) string {
+	const fallback = "latest"
+	if home == "" {
+		return fallback
+	}
+
+	data, err := os.ReadFile(filepath.Join(home, ".claude", "settings.json"))
+	if err != nil {
+		return fallback
+	}
+
+	var settings struct {
+		AutoUpdatesChannel string `json:"autoUpdatesChannel"`
+	}
+	if err := gojson.Unmarshal(data, &settings); err != nil {
+		return fallback
+	}
+	if settings.AutoUpdatesChannel == "" {
+		return fallback
+	}
+	return settings.AutoUpdatesChannel
+}

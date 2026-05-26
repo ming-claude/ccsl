@@ -192,3 +192,83 @@ func TestCheckEmptyVersion(t *testing.T) {
 		t.Errorf("Check(\"\") = %v, want nil", info)
 	}
 }
+
+func TestReadChannel_PresentInSettings(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	settings := `{"autoUpdatesChannel": "stable", "other": "ignored"}`
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(settings), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got := ReadChannel(home)
+	if got != "stable" {
+		t.Errorf("ReadChannel = %q, want %q", got, "stable")
+	}
+}
+
+func TestReadChannel_MissingField(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"model":"opus"}`), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got := ReadChannel(home)
+	if got != "latest" {
+		t.Errorf("ReadChannel = %q, want %q", got, "latest")
+	}
+}
+
+func TestReadChannel_FileMissing(t *testing.T) {
+	home := t.TempDir()
+	got := ReadChannel(home)
+	if got != "latest" {
+		t.Errorf("ReadChannel = %q, want %q", got, "latest")
+	}
+}
+
+func TestReadChannel_InvalidJSON(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{not json`), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got := ReadChannel(home)
+	if got != "latest" {
+		t.Errorf("ReadChannel = %q, want %q", got, "latest")
+	}
+}
+
+func TestReadChannel_EmptyString(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"autoUpdatesChannel":""}`), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got := ReadChannel(home)
+	if got != "latest" {
+		t.Errorf("ReadChannel = %q, want %q", got, "latest")
+	}
+}
+
+func TestReadChannel_EmptyHome(t *testing.T) {
+	got := ReadChannel("")
+	if got != "latest" {
+		t.Errorf("ReadChannel(\"\") = %q, want %q", got, "latest")
+	}
+}
