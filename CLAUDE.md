@@ -3,11 +3,11 @@
 ## Build & Test
 
 - `make build` — build binary
-- `make check` — fmt + vet + lint + test (pre-commit gate)
+- `make check` — fmt + vet + lint + test (race-enabled, pre-commit gate)
 - `make install` / `make i` — `go install` to GOPATH/bin
 - `go test ./...` — run all unit tests
 - `go test -tags integration -v .` — run end-to-end integration test
-- `golangci-lint run` — lint (errcheck enabled, must handle all return values)
+- `golangci-lint run` — lint (errcheck enabled). Requires v2 (`.golangci.yml` schema). Install: `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest`
 
 ## Architecture
 
@@ -42,3 +42,5 @@
 - Pre-GA project: no backward compatibility concerns — refactor aggressively, no migration/compat shims needed
 - Debug logging: all non-sensitive intermediate data (fetched values, computed state) should be included in the debug log entry (`internal/debug/`) for diagnostics
 - **New group checklist**: adding a segment group requires updates in 4 places — `registry_default.go` (register), `internal/style/style.go` (icon), all 15 `themes/*.json` (color), and relevant `presets/*.json` (layout)
+- Local-only docs (gitignored): `docs/superpowers/`, `docs/plans/`, `docs/brainstorms/` — superpowers skill specs/plans live here but are NOT committed
+- Release tags: annotated, format `vX.Y.Z: <one-liner summary>` (e.g. `v0.3.0: channel-aware upgrade notice`)
