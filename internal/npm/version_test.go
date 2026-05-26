@@ -70,14 +70,14 @@ func TestCacheRoundtrip(t *testing.T) {
 	dir := t.TempDir()
 	client := &VersionClient{CacheDir: dir}
 
-	const latest = "1.5.0"
-	if err := client.writeCache(latest); err != nil {
+	tags := map[string]string{"stable": "1.4.0", "latest": "1.5.0"}
+	if err := client.writeCache(tags); err != nil {
 		t.Fatalf("writeCache: %v", err)
 	}
 
 	got, age := client.readCache()
-	if got != latest {
-		t.Errorf("readCache returned %q, want %q", got, latest)
+	if got["latest"] != "1.5.0" || got["stable"] != "1.4.0" {
+		t.Errorf("readCache returned %v, want %v", got, tags)
 	}
 	if age > 5*time.Second {
 		t.Errorf("cache age %v unexpectedly large", age)
@@ -92,8 +92,8 @@ func TestCacheRoundtrip(t *testing.T) {
 	if err := gojson.Unmarshal(data, &env); err != nil {
 		t.Fatalf("Unmarshal: %v", err)
 	}
-	if env.Latest != latest {
-		t.Errorf("envelope.Latest = %q, want %q", env.Latest, latest)
+	if env.Tags["latest"] != "1.5.0" {
+		t.Errorf("envelope.Tags[latest] = %q, want %q", env.Tags["latest"], "1.5.0")
 	}
 }
 
@@ -107,7 +107,7 @@ func TestCacheExpiry(t *testing.T) {
 	// Write a cache entry with an old timestamp (2 hours ago).
 	env := cacheEnvelope{
 		FetchedAt: time.Now().Add(-2 * time.Hour).Unix(),
-		Latest:    "1.0.0",
+		Tags:      map[string]string{"latest": "1.0.0"},
 	}
 	data, err := gojson.Marshal(env)
 	if err != nil {
@@ -119,8 +119,8 @@ func TestCacheExpiry(t *testing.T) {
 
 	// readCache should return the value but with age > TTL.
 	got, age := client.readCache()
-	if got != "1.0.0" {
-		t.Errorf("readCache returned %q, want %q", got, "1.0.0")
+	if got["latest"] != "1.0.0" {
+		t.Errorf("readCache returned %v, want latest=1.0.0", got)
 	}
 	if age <= client.ttl() {
 		t.Errorf("expected expired cache (age %v <= ttl %v)", age, client.ttl())
@@ -132,8 +132,8 @@ func TestCacheReadMissing(t *testing.T) {
 	client := &VersionClient{CacheDir: dir}
 
 	got, age := client.readCache()
-	if got != "" {
-		t.Errorf("readCache on missing file returned %q, want empty", got)
+	if got != nil {
+		t.Errorf("readCache on missing file returned %v, want nil", got)
 	}
 	if age != 0 {
 		t.Errorf("readCache on missing file returned age %v, want 0", age)
@@ -158,7 +158,7 @@ func TestCheckViaHTTPTest(t *testing.T) {
 	}
 
 	// Pre-populate cache with "2.0.0".
-	if err := client.writeCache("2.0.0"); err != nil {
+	if err := client.writeCache(map[string]string{"latest": "2.0.0"}); err != nil {
 		t.Fatalf("writeCache: %v", err)
 	}
 
