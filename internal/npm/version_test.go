@@ -162,7 +162,7 @@ func TestCheckViaHTTPTest(t *testing.T) {
 		t.Fatalf("writeCache: %v", err)
 	}
 
-	info := client.Check("1.5.0")
+	info := client.Check("1.5.0", "latest")
 	if info == nil {
 		t.Fatal("Check returned nil")
 	}
@@ -177,7 +177,7 @@ func TestCheckViaHTTPTest(t *testing.T) {
 	}
 
 	// Same version → no update.
-	info2 := client.Check("2.0.0")
+	info2 := client.Check("2.0.0", "latest")
 	if info2 == nil {
 		t.Fatal("Check returned nil for same version")
 	}
@@ -188,7 +188,7 @@ func TestCheckViaHTTPTest(t *testing.T) {
 
 func TestCheckEmptyVersion(t *testing.T) {
 	client := &VersionClient{CacheDir: t.TempDir()}
-	if info := client.Check(""); info != nil {
+	if info := client.Check("", "latest"); info != nil {
 		t.Errorf("Check(\"\") = %v, want nil", info)
 	}
 }
@@ -270,5 +270,56 @@ func TestReadChannel_EmptyHome(t *testing.T) {
 	got := ReadChannel("")
 	if got != "latest" {
 		t.Errorf("ReadChannel(\"\") = %q, want %q", got, "latest")
+	}
+}
+
+func TestCheck_RespectsChannel(t *testing.T) {
+	tagMap := map[string]string{
+		"stable": "2.1.142",
+		"latest": "2.1.150",
+		"next":   "2.1.150",
+	}
+
+	tests := []struct {
+		name          string
+		current       string
+		channel       string
+		wantLatest    string
+		wantChannel   string
+		wantHasUpdate bool
+	}{
+		{"stable matches current", "2.1.142", "stable", "2.1.142", "stable", false},
+		{"stable below current's channel target", "2.1.140", "stable", "2.1.142", "stable", true},
+		{"latest is ahead", "2.1.142", "latest", "2.1.150", "latest", true},
+		{"next tag", "2.1.142", "next", "2.1.150", "next", true},
+		{"unknown channel falls back to latest", "2.1.142", "bogus", "2.1.150", "latest", true},
+		{"empty channel falls back to latest", "2.1.142", "", "2.1.150", "latest", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			client := &VersionClient{CacheDir: dir, CacheTTL: 3600}
+			if err := client.writeCache(tagMap); err != nil {
+				t.Fatalf("writeCache: %v", err)
+			}
+
+			info := client.Check(tc.current, tc.channel)
+			if info == nil {
+				t.Fatal("Check returned nil")
+			}
+			if info.Latest != tc.wantLatest {
+				t.Errorf("Latest = %q, want %q", info.Latest, tc.wantLatest)
+			}
+			if info.Channel != tc.wantChannel {
+				t.Errorf("Channel = %q, want %q", info.Channel, tc.wantChannel)
+			}
+			if info.HasUpdate != tc.wantHasUpdate {
+				t.Errorf("HasUpdate = %v, want %v", info.HasUpdate, tc.wantHasUpdate)
+			}
+			if info.CurrentVer != tc.current {
+				t.Errorf("CurrentVer = %q, want %q", info.CurrentVer, tc.current)
+			}
+		})
 	}
 }

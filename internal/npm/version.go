@@ -24,6 +24,7 @@ type VersionInfo struct {
 	Latest     string `json:"latest"`
 	HasUpdate  bool   `json:"has_update"`
 	CurrentVer string `json:"current_ver"`
+	Channel    string `json:"channel"`
 }
 
 // VersionClient checks npm for the latest Claude Code version with disk caching.
@@ -38,15 +39,25 @@ type cacheEnvelope struct {
 	Tags      map[string]string `json:"tags"`
 }
 
-// Check returns the latest version info, comparing against currentVersion.
-// Returns nil on any failure (graceful degradation).
-func (c *VersionClient) Check(currentVersion string) *VersionInfo {
+// Check returns the version info for the given channel, comparing against
+// currentVersion. If the channel is not present in npm's dist-tags, it
+// falls back to "latest". Returns nil on any failure (graceful degradation).
+func (c *VersionClient) Check(currentVersion, channel string) *VersionInfo {
 	if currentVersion == "" {
 		return nil
 	}
 
 	tags := c.getTags()
-	target := tags["latest"]
+	if len(tags) == 0 {
+		return nil
+	}
+
+	actualChannel := channel
+	target := tags[actualChannel]
+	if target == "" {
+		actualChannel = "latest"
+		target = tags[actualChannel]
+	}
 	if target == "" {
 		return nil
 	}
@@ -55,6 +66,7 @@ func (c *VersionClient) Check(currentVersion string) *VersionInfo {
 		Latest:     target,
 		HasUpdate:  compareSemver(target, currentVersion) > 0,
 		CurrentVer: currentVersion,
+		Channel:    actualChannel,
 	}
 }
 
