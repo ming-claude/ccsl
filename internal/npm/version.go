@@ -24,6 +24,7 @@ type VersionInfo struct {
 	Latest     string `json:"latest"`
 	HasUpdate  bool   `json:"has_update"`
 	CurrentVer string `json:"current_ver"`
+	Channel    string `json:"channel"`
 }
 
 // VersionClient checks npm for the latest Claude Code version with disk caching.
@@ -33,72 +34,77 @@ type VersionClient struct {
 	TimeoutMs int
 }
 
-type distTags struct {
-	Latest string `json:"latest"`
-}
-
 type cacheEnvelope struct {
-	FetchedAt int64  `json:"fetched_at"`
-	Latest    string `json:"latest"`
+	FetchedAt int64             `json:"fetched_at"`
+	Tags      map[string]string `json:"tags"`
 }
 
-// Check returns the latest version info, comparing against currentVersion.
-// Returns nil on any failure (graceful degradation).
-func (c *VersionClient) Check(currentVersion string) *VersionInfo {
+// Check returns the version info for the given channel, comparing against
+// currentVersion. If the channel is not present in npm's dist-tags, it
+// falls back to "latest". Returns nil on any failure (graceful degradation).
+func (c *VersionClient) Check(currentVersion, channel string) *VersionInfo {
 	if currentVersion == "" {
 		return nil
 	}
 
-	latest := c.getLatest()
-	if latest == "" {
+	tags := c.getTags()
+	if len(tags) == 0 {
+		return nil
+	}
+
+	actualChannel := channel
+	target := tags[actualChannel]
+	if target == "" {
+		actualChannel = "latest"
+		target = tags[actualChannel]
+	}
+	if target == "" {
 		return nil
 	}
 
 	return &VersionInfo{
-		Latest:     latest,
-		HasUpdate:  compareSemver(latest, currentVersion) > 0,
+		Latest:     target,
+		HasUpdate:  compareSemver(target, currentVersion) > 0,
 		CurrentVer: currentVersion,
+		Channel:    actualChannel,
 	}
 }
 
-func (c *VersionClient) getLatest() string {
-	// Try disk cache first.
-	if cached, age := c.readCache(); cached != "" && age <= c.ttl() {
+func (c *VersionClient) getTags() map[string]string {
+	if cached, age := c.readCache(); cached != nil && age <= c.ttl() {
 		return cached
 	}
 
-	// Fetch from npm.
-	latest, err := c.fetchFromNpm()
+	tags, err := c.fetchFromNpm()
 	if err != nil {
-		// Fallback to expired cache.
-		if cached, _ := c.readCache(); cached != "" {
+		if cached, _ := c.readCache(); cached != nil {
 			return cached
 		}
-		return ""
+		return nil
 	}
 
-	_ = c.writeCache(latest)
-	return latest
+	_ = c.writeCache(tags)
+	return tags
 }
 
-func (c *VersionClient) fetchFromNpm() (string, error) {
+func (c *VersionClient) fetchFromNpm() (map[string]string, error) {
 	client := &http.Client{Timeout: c.timeout()}
 	resp, err := client.Get(distTagsURL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var tags distTags
+	tags := make(map[string]string)
 	if err := gojson.Unmarshal(body, &tags); err != nil {
-		return "", err
+		return nil, err
 	}
-	return tags.Latest, nil
+	return tags, nil
 }
 
 func (c *VersionClient) ttl() time.Duration {
@@ -121,25 +127,28 @@ func (c *VersionClient) cachePath() string {
 	return filepath.Join(c.CacheDir, cacheFileName)
 }
 
-func (c *VersionClient) readCache() (string, time.Duration) {
+func (c *VersionClient) readCache() (map[string]string, time.Duration) {
 	data, err := os.ReadFile(c.cachePath())
 	if err != nil {
-		return "", 0
+		return nil, 0
 	}
 	var env cacheEnvelope
 	if err := gojson.Unmarshal(data, &env); err != nil {
-		return "", 0
+		return nil, 0
+	}
+	if len(env.Tags) == 0 {
+		return nil, 0
 	}
 	age := time.Since(time.Unix(env.FetchedAt, 0))
-	return env.Latest, age
+	return env.Tags, age
 }
 
-func (c *VersionClient) writeCache(latest string) error {
+func (c *VersionClient) writeCache(tags map[string]string) error {
 	path := c.cachePath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	env := cacheEnvelope{FetchedAt: time.Now().Unix(), Latest: latest}
+	env := cacheEnvelope{FetchedAt: time.Now().Unix(), Tags: tags}
 	data, err := gojson.Marshal(env)
 	if err != nil {
 		return err
@@ -191,4 +200,31 @@ func parseSemver(v string) [3]int {
 		parts[i], _ = strconv.Atoi(s)
 	}
 	return parts
+}
+
+// ReadChannel returns the auto-update channel configured in
+// <home>/.claude/settings.json's autoUpdatesChannel field.
+// Returns "latest" on any failure (missing file, invalid JSON,
+// missing or empty field) for graceful fallback.
+func ReadChannel(home string) string {
+	const fallback = "latest"
+	if home == "" {
+		return fallback
+	}
+
+	data, err := os.ReadFile(filepath.Join(home, ".claude", "settings.json"))
+	if err != nil {
+		return fallback
+	}
+
+	var settings struct {
+		AutoUpdatesChannel string `json:"autoUpdatesChannel"`
+	}
+	if err := gojson.Unmarshal(data, &settings); err != nil {
+		return fallback
+	}
+	if settings.AutoUpdatesChannel == "" {
+		return fallback
+	}
+	return settings.AutoUpdatesChannel
 }

@@ -95,10 +95,11 @@ func RunStatusline() error {
 		defer func() { tNpm = time.Since(t0).Milliseconds() }()
 		if stdin.Version != "" {
 			home, _ := os.UserHomeDir()
+			channel := npm.ReadChannel(home)
 			client := &npm.VersionClient{
 				CacheDir: filepath.Join(home, ".claude", "ccsl", "cache"),
 			}
-			versionInfo = client.Check(stdin.Version)
+			versionInfo = client.Check(stdin.Version, channel)
 		}
 		return nil
 	})
