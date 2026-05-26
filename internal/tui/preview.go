@@ -90,6 +90,7 @@ func mockRenderContext() *segment.RenderContext {
 			Latest:     "1.0.38",
 			HasUpdate:  true,
 			CurrentVer: "1.0.37",
+			Channel:    "latest",
 		},
 		MemoryPct: "67%",
 		Style:     segment.StyleNerdFont,

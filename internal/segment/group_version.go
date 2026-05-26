@@ -16,9 +16,13 @@ func (g *VersionGroup) Render(ctx *RenderContext) (*SegmentOutput, error) {
 		return nil, nil
 	}
 	stdin := ctx.Stdin
-	ver := vi.Latest
+	channel := vi.Channel
+	if channel == "" {
+		channel = "latest"
+	}
+	ver := vi.Latest + " (" + channel + ")"
 	if stdin != nil && stdin.Version != "" {
-		ver = stdin.Version + " \u2b06 " + vi.Latest
+		ver = stdin.Version + " \u2b06 " + vi.Latest + " (" + channel + ")"
 	}
 	return &SegmentOutput{Primary: ver}, nil
 }
