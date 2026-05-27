@@ -5,6 +5,7 @@ import (
 
 	"github.com/ming-claude/ccsl/internal/input"
 	"github.com/ming-claude/ccsl/internal/npm"
+	"github.com/ming-claude/ccsl/internal/render"
 )
 
 func TestStripCommonVersionPrefix(t *testing.T) {
@@ -37,10 +38,11 @@ func TestStripCommonVersionPrefix(t *testing.T) {
 
 func TestVersionGroup_Render(t *testing.T) {
 	tests := []struct {
-		name   string
-		ctx    *RenderContext
-		want   string
-		wantOk bool
+		name     string
+		ctx      *RenderContext
+		want     string // full Primary
+		wantCore string // MinWidth-protected prefix (Primary minus the " (channel)" suffix)
+		wantOk   bool
 	}{
 		{
 			name: "no npm info",
@@ -60,8 +62,9 @@ func TestVersionGroup_Render(t *testing.T) {
 				NpmVersion: &npm.VersionInfo{Latest: "2.1.144", HasUpdate: true, Channel: "stable"},
 				Stdin:      &input.StdinData{Version: "2.1.142"},
 			},
-			want:   "2.1.142 ⬆ 144 (stable)",
-			wantOk: true,
+			want:     "2.1.142 ⬆ 144 (stable)",
+			wantCore: "2.1.142 ⬆ 144",
+			wantOk:   true,
 		},
 		{
 			name: "minor bump keeps full latest",
@@ -70,8 +73,9 @@ func TestVersionGroup_Render(t *testing.T) {
 				NpmVersion: &npm.VersionInfo{Latest: "2.2.0", HasUpdate: true, Channel: "stable"},
 				Stdin:      &input.StdinData{Version: "2.1.144"},
 			},
-			want:   "2.1.144 ⬆ 2.2.0 (stable)",
-			wantOk: true,
+			want:     "2.1.144 ⬆ 2.2.0 (stable)",
+			wantCore: "2.1.144 ⬆ 2.2.0",
+			wantOk:   true,
 		},
 		{
 			name: "no current version shows latest only",
@@ -79,8 +83,9 @@ func TestVersionGroup_Render(t *testing.T) {
 				Style:      StylePlain,
 				NpmVersion: &npm.VersionInfo{Latest: "2.1.144", HasUpdate: true, Channel: "stable"},
 			},
-			want:   "2.1.144 (stable)",
-			wantOk: true,
+			want:     "2.1.144 (stable)",
+			wantCore: "2.1.144",
+			wantOk:   true,
 		},
 		{
 			name: "blank channel defaults to latest",
@@ -89,8 +94,9 @@ func TestVersionGroup_Render(t *testing.T) {
 				NpmVersion: &npm.VersionInfo{Latest: "2.1.144", HasUpdate: true, Channel: ""},
 				Stdin:      &input.StdinData{Version: "2.1.142"},
 			},
-			want:   "2.1.142 ⬆ 144 (latest)",
-			wantOk: true,
+			want:     "2.1.142 ⬆ 144 (latest)",
+			wantCore: "2.1.142 ⬆ 144",
+			wantOk:   true,
 		},
 	}
 
@@ -112,6 +118,12 @@ func TestVersionGroup_Render(t *testing.T) {
 			}
 			if out.Primary != tt.want {
 				t.Errorf("Primary = %q, want %q", out.Primary, tt.want)
+			}
+			if !out.IsVariable {
+				t.Errorf("expected IsVariable=true so the width budget can drop the channel suffix")
+			}
+			if want := render.DisplayWidth(tt.wantCore); out.MinWidth != want {
+				t.Errorf("MinWidth = %d, want %d (core %q)", out.MinWidth, want, tt.wantCore)
 			}
 		})
 	}

@@ -1,6 +1,10 @@
 package segment
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/ming-claude/ccsl/internal/render"
+)
 
 // VersionGroup displays the CLI version with an update indicator.
 type VersionGroup struct{}
@@ -22,12 +26,17 @@ func (g *VersionGroup) Render(ctx *RenderContext) (*SegmentOutput, error) {
 	if channel == "" {
 		channel = "latest"
 	}
-	ver := vi.Latest + " (" + channel + ")"
+	core := vi.Latest
 	if stdin != nil && stdin.Version != "" {
 		target := stripCommonVersionPrefix(stdin.Version, vi.Latest)
-		ver = stdin.Version + " \u2b06 " + target + " (" + channel + ")"
+		core = stdin.Version + " \u2b06 " + target
 	}
-	return &SegmentOutput{Primary: ver}, nil
+	primary := core + " (" + channel + ")"
+	return &SegmentOutput{
+		Primary:    primary,
+		IsVariable: true,
+		MinWidth:   render.DisplayWidth(core),
+	}, nil
 }
 
 // stripCommonVersionPrefix returns latest with leading dot-separated segments
