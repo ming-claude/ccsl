@@ -84,6 +84,29 @@ func TestResolve_ValidUserConfig(t *testing.T) {
 	}
 }
 
+func TestResolve_SnapshotFlag(t *testing.T) {
+	t.Setenv("COLORTERM", "truecolor")
+	tests := []struct {
+		name string
+		uc   *UserConfig
+		want bool
+	}{
+		{"default off", &UserConfig{}, false},
+		{"enabled", &UserConfig{Snapshot: true}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := Resolve(tt.uc)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.Snapshot != tt.want {
+				t.Errorf("cfg.Snapshot = %v, want %v", cfg.Snapshot, tt.want)
+			}
+		})
+	}
+}
+
 func TestResolve_PresetDisabledMergesWithUserDisabled(t *testing.T) {
 	// Minimal preset has default disabled entries.
 	uc := &UserConfig{

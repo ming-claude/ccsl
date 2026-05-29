@@ -17,6 +17,7 @@ import (
 	"github.com/ming-claude/ccsl/internal/pipeline"
 	"github.com/ming-claude/ccsl/internal/render"
 	"github.com/ming-claude/ccsl/internal/segment"
+	"github.com/ming-claude/ccsl/internal/snapshot"
 	"github.com/ming-claude/ccsl/internal/style"
 	"github.com/ming-claude/ccsl/internal/transcript"
 )
@@ -218,6 +219,13 @@ func RunStatusline() error {
 	// 8. Output.
 	if len(outputLines) > 0 {
 		fmt.Print(strings.Join(outputLines, "\n"))
+	}
+
+	// 9. Snapshot: mirror the raw Claude Code payload to
+	// ~/.claude/statusline-snapshot.json for external tools (menu-bar apps,
+	// dashboards). Best-effort — a failure must never disrupt the statusline.
+	if cfg.Snapshot {
+		_ = snapshot.Write(rawStdin)
 	}
 	return nil
 }

@@ -233,6 +233,7 @@ func Resolve(uc *UserConfig) (*Config, error) {
 		Separator:    separator,
 		SeparatorSet: separatorSet,
 		Debug:        uc.Debug,
+		Snapshot:     uc.Snapshot,
 	}, nil
 }
 

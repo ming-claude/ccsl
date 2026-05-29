@@ -13,6 +13,9 @@ type UserConfig struct {
 	Style            string   `json:"style"`
 	DisabledSegments []string `json:"disabled_segments"`
 	Debug            bool     `json:"debug,omitempty"`
+	// Snapshot enables mirroring the raw Claude Code statusline payload to
+	// ~/.claude/statusline-snapshot.json for external tools. Off by default.
+	Snapshot bool `json:"snapshot,omitempty"`
 }
 
 // Config is the resolved runtime configuration.
@@ -27,6 +30,7 @@ type Config struct {
 	Separator    string                  // from theme
 	SeparatorSet bool                    // true when theme provides a separator
 	Debug        bool                    // enable debug logging
+	Snapshot     bool                    // write ~/.claude/statusline-snapshot.json for external tools
 }
 
 // SegmentColor represents a color specification for a segment or group.
